@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum PlanType {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum BillingProvider {
+  STRIPE
+  RAZORPAY
+}
+
+model Tenant {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  companyName     String
+  planType        PlanType       @default(FREE)
+  billingProvider BillingProvider?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  users           User[]
+  cropCalendars   CropCalendar[]
+  uploads         Upload[]
+  usageEvents     UsageEvent[]
+  subscriptions   Subscription[]
+
+  @@index([planType])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, role])
+}
+
+model Subscription {
+  id              String          @id @default(cuid())
+  tenantId        String
+  provider        BillingProvider
+  externalId      String          @unique
+  status          String
+  currentPeriodEnd DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+}
+
+model Crop {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  category    String
+  calendars   CropCalendar[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([name, category])
+}
+
+model Country {
+  id          String         @id @default(cuid())
+  code        String         @unique
+  name        String
+  regions     Region[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Region {
+  id                String         @id @default(cuid())
+  countryId         String
+  name              String
+  agroZoneName      String
+  latitude          Float?
+  longitude         Float?
+  calendars         CropCalendar[]
+  country           Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([countryId, agroZoneName])
+  @@unique([countryId, name, agroZoneName])
+}
+
+model CropCalendar {
+  id                String    @id @default(cuid())
+  tenantId          String
+  cropId            String
+  regionId          String
+  sowingMonths      Int[]
+  growingMonths     Int[]
+  harvestingMonths  Int[]
+  seasonName        String
+  year              Int
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  crop              Crop      @relation(fields: [cropId], references: [id], onDelete: Restrict)
+  region            Region    @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, cropId, regionId])
+  @@index([cropId, regionId])
+  @@index([seasonName, year])
+}
+
+model Upload {
+  id            String       @id @default(cuid())
+  tenantId      String
+  fileUrl       String
+  filename      String
+  status        UploadStatus @default(PENDING)
+  processedData Json?
+  errorMessage  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+}
+
+model UsageEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventName   String
+  eventGroup  String
+  quantity    Int      @default(1)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([eventGroup, eventName])
+}
+

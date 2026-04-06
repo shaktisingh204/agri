@@ -5,7 +5,7 @@
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs",
   "env": {
-    "DATABASE_URL": "@database-url",
+    "MONGODB_URI": "@mongodb-uri",
     "JWT_SECRET": "@jwt-secret"
   }
 }

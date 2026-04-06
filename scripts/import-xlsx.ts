@@ -171,7 +171,12 @@ async function main() {
   const cropCache = new Map<string, { _id: unknown }>();
   const regionCache = new Map<string, { _id: unknown }>();
 
-  for (const row of validRows) {
+  const total = validRows.length;
+  for (let i = 0; i < validRows.length; i++) {
+    const row = validRows[i];
+    if ((i + 1) % 100 === 0 || i === 0) {
+      console.log(`Processing row ${i + 1}/${total}...`);
+    }
     const stateName = String(row.State).trim();
     const districtName = String(row["Name of the district (All districts)"]).trim();
     const cropName = String(row.Crop).trim();

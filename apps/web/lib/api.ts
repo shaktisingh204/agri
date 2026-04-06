@@ -7,55 +7,11 @@ import { getUsage } from "../app/actions/analytics";
 import { getPopularCrops } from "../app/actions/analytics";
 import { getUploadStatus } from "../app/actions/uploads";
 
-const fallbackCountries: Country[] = [
-  { id: "ng", code: "NG", name: "Nigeria" },
-  { id: "ke", code: "KE", name: "Kenya" },
-];
-
-const fallbackRegions: Region[] = [
-  {
-    id: "north-central",
-    name: "North Central",
-    agroZoneName: "Guinea Savannah",
-    latitude: 9.082,
-    longitude: 8.6753,
-    country: fallbackCountries[0],
-  },
-  {
-    id: "rift-valley",
-    name: "Rift Valley",
-    agroZoneName: "Highland Maize Zone",
-    latitude: -0.3031,
-    longitude: 36.08,
-    country: fallbackCountries[1],
-  },
-];
-
-const fallbackCrops: Crop[] = [
-  { id: "maize", name: "Maize", slug: "maize", category: "Cereal" },
-  { id: "rice", name: "Rice", slug: "rice", category: "Cereal" },
-  { id: "cassava", name: "Cassava", slug: "cassava", category: "Root Crop" },
-];
-
-const fallbackCalendars: CropCalendarRecord[] = [];
-
-const fallbackUploads = [
-  {
-    id: "u1",
-    filename: "fao-crop-calendar.pdf",
-    status: "COMPLETED",
-    createdAt: new Date().toISOString(),
-    processedData: {
-      totalRows: 12,
-      preview: ["Maize", "Rice", "Cassava"],
-    },
-  },
-] satisfies UploadRecord[];
-
-async function safeQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
-  } catch {
+  } catch (error) {
+    console.error(`[${label}] query failed:`, error instanceof Error ? error.message : error);
     return fallback;
   }
 }
@@ -72,11 +28,12 @@ export async function getDashboardData(searchParams?: Record<string, string | st
   const monthNum = month ? parseInt(month, 10) : undefined;
 
   const [countries, regions, crops, calendars, usage, popularCrops] = await Promise.all([
-    safeQuery(() => getCountries(), fallbackCountries),
-    safeQuery(() => getRegions(country || undefined), fallbackRegions),
-    safeQuery(() => getCrops(), fallbackCrops),
+    safeQuery("countries", () => getCountries(), []),
+    safeQuery("regions", () => getRegions(country || undefined), []),
+    safeQuery("crops", () => getCrops(), []),
     hasActiveFilters
       ? safeQuery(
+          "calendars",
           () =>
             getCalendars({
               crop: crop || undefined,
@@ -86,25 +43,16 @@ export async function getDashboardData(searchParams?: Record<string, string | st
               season: season || undefined,
               month: monthNum,
             }),
-          fallbackCalendars
+          []
         )
       : Promise.resolve<CropCalendarRecord[]>([]),
-    safeQuery(() => getUsage(), {
-      totalRequests: 195,
-      recentEvents: [
-        { eventName: "calendar_view", quantity: 187 },
-        { eventName: "pdf_upload", quantity: 8 },
-      ],
-    }),
-    safeQuery(() => getPopularCrops(), [
-      { cropName: "Maize", usageCount: 44 },
-      { cropName: "Rice", usageCount: 32 },
-    ]),
+    safeQuery("usage", () => getUsage(), { totalRequests: 0, recentEvents: [] }),
+    safeQuery("popularCrops", () => getPopularCrops(), []),
   ]);
 
   return { countries, regions, crops, calendars, hasActiveFilters, usage, popularCrops };
 }
 
 export async function getUploads(): Promise<UploadRecord[]> {
-  return safeQuery(() => getUploadStatus(), fallbackUploads);
+  return safeQuery("uploads", () => getUploadStatus(), []);
 }

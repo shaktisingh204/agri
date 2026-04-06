@@ -74,3 +74,15 @@ export async function updateUploadIngestion(data: {
 
   return { id: uploadId, status };
 }
+
+export async function getUploadStatus() {
+  const db = await getDb();
+  const uploads = await db.collection("uploads").find().sort({ createdAt: -1 }).toArray();
+  return uploads.map((u) => ({
+    id: u._id.toString(),
+    filename: u.filename,
+    status: u.status,
+    createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
+    processedData: (u.processedData as Record<string, unknown>) ?? undefined,
+  }));
+}

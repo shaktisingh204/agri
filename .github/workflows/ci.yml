@@ -27,9 +27,6 @@ jobs:
       - name: Build web
         run: npm --workspace @agri/web run build
         working-directory: platform
-      - name: Build api
-        run: npm --workspace @agri/api run build
-        working-directory: platform
       - name: Lint python service
         run: python -m compileall app
         working-directory: platform/services/ingestion

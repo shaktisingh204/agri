@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
-  serverExternalPackages: ["@prisma/client", "bcryptjs"]
+  serverExternalPackages: ["bcryptjs"]
 };
 
 export default nextConfig;

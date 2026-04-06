@@ -10,17 +10,6 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
-      - api
-
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    env_file:
-      - .env.example
-    ports:
-      - "${API_PORT:-4000}:4000"
-    depends_on:
       - postgres
       - redis
 
@@ -30,10 +19,13 @@ services:
       dockerfile: services/ingestion/Dockerfile
     env_file:
       - .env.example
+    environment:
+      BACKEND_SYNC_URL: http://web:3000/api/admin/uploads/ingestion
+      BACKEND_COMMIT_URL: http://web:3000/api/admin/uploads/commit
     ports:
       - "${INGESTION_PORT:-8000}:8000"
     depends_on:
-      - api
+      - web
 
   postgres:
     image: postgres:16-alpine

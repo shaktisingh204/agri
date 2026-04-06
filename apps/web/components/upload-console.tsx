@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { IngestionPreviewPayload, UploadRecord } from "../lib/types";
 
-const INGESTION_URL = process.env.NEXT_PUBLIC_INGESTION_URL ?? "http://localhost:8000";
 
 interface CommitResult {
   status: string;
@@ -34,7 +33,7 @@ export function UploadConsole({ uploads }: { uploads: UploadRecord[] }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch(`${INGESTION_URL}/ingest/pdf/preview`, {
+      const response = await fetch(`/api/ingest/pdf/preview`, {
         method: "POST",
         body: formData
       });
@@ -64,7 +63,7 @@ export function UploadConsole({ uploads }: { uploads: UploadRecord[] }) {
     setErrorMessage("");
 
     try {
-      const response = await fetch(`${INGESTION_URL}/ingest/commit`, {
+      const response = await fetch(`/api/ingest/commit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -95,16 +94,16 @@ export function UploadConsole({ uploads }: { uploads: UploadRecord[] }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
       <section className="rounded-[2rem] border border-white/60 bg-white/85 p-6 shadow-soft backdrop-blur">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">PDF ingestion</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">File ingestion</p>
         <h1 className="mt-2 text-3xl font-semibold text-slate-900">Admin upload console</h1>
         <p className="mt-3 text-sm text-slate-600">
-          Extract and validate first, review staged CSV output, then commit to database through API.
+          Upload PDF or XLSX crop calendar files. Extract and validate first, then commit to database.
         </p>
         <div className="mt-6 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">PDF file</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">PDF or XLSX file</span>
             <input
-              accept="application/pdf"
+              accept="application/pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
               onChange={(event) => {
                 const selectedFile = event.target.files?.[0] ?? null;

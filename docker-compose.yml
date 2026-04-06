@@ -9,53 +9,13 @@ services:
       - .env.example
     ports:
       - "${WEB_PORT:-3000}:3000"
-    depends_on:
-      - postgres
-      - redis
 
-  ingestion:
-    build:
-      context: .
-      dockerfile: services/ingestion/Dockerfile
-    env_file:
-      - .env.example
-    environment:
-      BACKEND_SYNC_URL: http://web:3000/api/admin/uploads/ingestion
-      BACKEND_COMMIT_URL: http://web:3000/api/admin/uploads/commit
+  mongo:
+    image: mongo:7
     ports:
-      - "${INGESTION_PORT:-8000}:8000"
-    depends_on:
-      - web
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: agri_crop_calendar
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
+      - mongo-data:/data/db
 
 volumes:
-  postgres-data:
-  minio-data:
-
+  mongo-data:
